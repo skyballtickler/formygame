@@ -13,35 +13,88 @@
             align-items: center;
             height: 100vh;
             background-color: #000;
+            font-family: Arial, sans-serif;
         }
         canvas {
             border: 2px solid white;
+        }
+        .message {
+            position: absolute;
+            bottom: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            text-align: center;
+        }
+        .score {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+        }
+        .username-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            text-align: center;
+        }
+        .username-screen input {
+            padding: 10px;
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
     <canvas id="pong" width="800" height="400"></canvas>
+    <div class="message">Made by ChatGPT</div>
+    <div class="score" id="score-display">Player 1: 0 | Player 2: 0</div>
+    <div class="username-screen" id="username-screen">
+        <p>Enter your username:</p>
+        <input type="text" id="username-input" placeholder="Username">
+        <button onclick="startGame()">Start Game</button>
+    </div>
 
     <script>
         const canvas = document.getElementById("pong");
         const ctx = canvas.getContext("2d");
+        const scoreDisplay = document.getElementById("score-display");
+        const usernameScreen = document.getElementById("username-screen");
+        const usernameInput = document.getElementById("username-input");
 
-        // Create the paddle
         const paddleWidth = 10, paddleHeight = 100;
-
-        let leftPaddleY = (canvas.height - paddleHeight) / 2;
-        let rightPaddleY = (canvas.height - paddleHeight) / 2;
-        let leftPaddleSpeed = 0;
-        let rightPaddleSpeed = 0;
-
-        // Create the ball
         const ballRadius = 10;
-        let ballX = canvas.width / 2;
-        let ballY = canvas.height / 2;
-        let ballSpeedX = 5;
-        let ballSpeedY = 5;
 
-        // Draw the paddles and ball
+        let leftPaddleY, rightPaddleY, leftPaddleSpeed, rightPaddleSpeed;
+        let ballX, ballY, ballSpeedX, ballSpeedY;
+        let leftScore, rightScore;
+        let isGameStarted = false;
+        let username = "";
+        let highScore = 0;
+
+        // Game initialization
+        function initializeGame() {
+            leftPaddleY = (canvas.height - paddleHeight) / 2;
+            rightPaddleY = (canvas.height - paddleHeight) / 2;
+            leftPaddleSpeed = 0;
+            rightPaddleSpeed = 0;
+
+            ballX = canvas.width / 2;
+            ballY = canvas.height / 2;
+            ballSpeedX = 5;
+            ballSpeedY = 5;
+
+            leftScore = 0;
+            rightScore = 0;
+
+            isGameStarted = true;
+        }
+
+        // Draw paddles, ball, and score
         function draw() {
             // Clear the canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -60,15 +113,18 @@
             ctx.fillStyle = "#FFF";
             ctx.fill();
             ctx.closePath();
+
+            // Draw the score
+            scoreDisplay.textContent = `Player 1: ${leftScore} | Player 2: ${rightScore}`;
         }
 
-        // Update the game elements
+        // Update the game logic
         function update() {
             // Move the paddles
             leftPaddleY += leftPaddleSpeed;
             rightPaddleY += rightPaddleSpeed;
 
-            // Keep paddles inside the canvas
+            // Prevent paddles from going out of bounds
             if (leftPaddleY < 0) leftPaddleY = 0;
             if (leftPaddleY > canvas.height - paddleHeight) leftPaddleY = canvas.height - paddleHeight;
             if (rightPaddleY < 0) rightPaddleY = 0;
@@ -92,14 +148,31 @@
                 ballSpeedX = -ballSpeedX;
             }
 
-            // Ball out of bounds
-            if (ballX - ballRadius <= 0 || ballX + ballRadius >= canvas.width) {
-                // Reset ball to center
-                ballX = canvas.width / 2;
-                ballY = canvas.height / 2;
-                ballSpeedX = -ballSpeedX;
-                ballSpeedY = 5;
+            // Ball out of bounds (reset ball position)
+            if (ballX - ballRadius <= 0) {
+                rightScore++;
+                if (rightScore > highScore) highScore = rightScore;
+                resetBall();
             }
+            if (ballX + ballRadius >= canvas.width) {
+                leftScore++;
+                if (leftScore > highScore) highScore = leftScore;
+                resetBall();
+            }
+
+            // Check for winning condition
+            if (leftScore === 10 || rightScore === 10) {
+                alert(`${leftScore === 10 ? 'Player 1' : 'Player 2'} wins!`);
+                resetGame();
+            }
+        }
+
+        // Reset ball position
+        function resetBall() {
+            ballX = canvas.width / 2;
+            ballY = canvas.height / 2;
+            ballSpeedX = 5;
+            ballSpeedY = 5;
         }
 
         // Control the paddles
@@ -129,13 +202,38 @@
 
         // Game loop
         function gameLoop() {
-            draw();
-            update();
-            requestAnimationFrame(gameLoop);
+            if (isGameStarted) {
+                draw();
+                update();
+                requestAnimationFrame(gameLoop);
+            }
         }
 
-        movePaddles();
-        gameLoop();
+        // Start the game
+        function startGame() {
+            username = usernameInput.value;
+            if (username.trim() === "") {
+                alert("Please enter a valid username.");
+                return;
+            }
+            usernameScreen.style.display = "none";
+            initializeGame();
+            movePaddles();
+            gameLoop();
+        }
+
+        // Reset game state
+        function resetGame() {
+            leftScore = 0;
+            rightScore = 0;
+            resetBall();
+            gameLoop();
+        }
+
+        // Display high score at the end of the game
+        function displayHighScore() {
+            alert(`Game Over! High Score: ${highScore}`);
+        }
     </script>
 </body>
 </html>
